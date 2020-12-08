@@ -189,12 +189,12 @@ def custom_greedsearch(list_of_data_params,
         mode="min",
         save_best_only=True)
 
-    history = model.fit(x=X_train, y=y_train,
-                        epochs=epochs, shuffle=True,
-                        batch_size=batch_size,
-                        validation_data=(X_test, y_test),
-                        verbose=1,
-                        callbacks=[tb_callback, mc_callback])
+    model.fit(x=X_train, y=y_train,
+              epochs=epochs, shuffle=True,
+              batch_size=batch_size,
+              validation_data=(X_test, y_test),
+              verbose=1,
+              callbacks=[tb_callback, mc_callback])
 
     y_predicted = np.where(model.predict(X_test) > 0.5, 1, 0)
     params_str = f"window size = {window}, noise = {noise}, \
