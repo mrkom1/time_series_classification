@@ -12,14 +12,21 @@ def read_df(path_files, cols=['gazePointX', 'gazePointY', 'timestamp']):
     dfs = pd.DataFrame(columns=cols)
 
     for name in csv_files:
-        json_name = name[:-11]+"structure.json"
-        with open(json_name, "r") as read_file:
-            data = json.load(read_file)
-            width = data[0]['screen']['width']
-            height = data[0]['screen']['height']
-        df = pd.read_csv(name)[cols]
-        df['gazePointX'] = df.gazePointX / width
-        df['gazePointY'] = df.gazePointY / height
+        df = pd.read_csv(name)
+        # 0.4.0 tracker
+        if cols[0] in df.columns:
+            json_name = name[:-11]+"structure.json"
+            with open(json_name, "r") as read_file:
+                data = json.load(read_file)
+                width = data[0]['screen']['width']
+                height = data[0]['screen']['height']
+            df = df[cols]
+            df['gazePointX'] = df.gazePointX / width
+            df['gazePointY'] = df.gazePointY / height
+        # older tracker
+        else:
+            df = df[['gx', 'gy', 'timestamp']]
+            df = df.rename(columns={"gx": "gazePointX", "gy": "gazePointY"})
         df["Name"] = "_".join(name.split("/")[-3:-1])
         dfs = pd.concat([dfs, df])
 
