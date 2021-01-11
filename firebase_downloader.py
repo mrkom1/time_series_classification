@@ -55,13 +55,34 @@ class FirebaseClient:
                 }
         return sess_ids
 
-    def delete_sess(self, sess_id: str):
-        """
-        Delete sess record
+    def delete_sess(self, sess_id: str, delete_data: bool = True):
+        """Delete sess record
+
+        Parameters
+        ----------
+        sess_id : str
+            session id in db
+        delete_data : bool, optional
+            delete sess files from storage, by default True
         """
         self.firestore_db.collection(u'sessions').document(sess_id).delete()
+        print(f"{sess_id} removed from db")
 
-    def delete_all_sess_for_user(self, userid: str):
+        if delete_data:
+            firebase = pyrebase.initialize_app(self.config_firebase)
+            storage = firebase.storage()
+            all_files = storage.list_files()
+            for file in all_files:
+                if file.name.startswith("sessions") and \
+                    (file.name.endswith("json") or
+                    file.name.endswith("csv")) and \
+                    (file.name.split("/")[1] == sess_id):
+                    storage.delete(file.name)
+                    print(f"🗑 {file.name} deleted")
+
+    def delete_all_sess_for_user(self, 
+                                 userid: str, 
+                                 delete_data: bool = True):
         """
         Delete all sessions for user by his id
         """
@@ -69,7 +90,16 @@ class FirebaseClient:
         for sess in sessions:
             sess_meta = sess.to_dict()
             if sess_meta['userId'] == userid:
-                self.delete_sess(sess.id)
+                self.delete_sess(sess.id, delete_data)
+
+    def delete_all_sess(self, 
+                        delete_data: bool = True):
+        """
+        Delete all sessions
+        """
+        sessions = list(self.firestore_db.collection(u'sessions').get())
+        for sess in sessions:
+            self.delete_sess(sess.id, delete_data)
 
     def get_sess_files(self) -> list:
         """
@@ -119,17 +149,18 @@ if __name__ == '__main__':
     config_file = "firebase_creds/configs.json"
     firebase_cli = FirebaseClient(private_key_file, config_file)
 
-    # download firebase sessions
-    print("images")
-    sess_ids = firebase_cli.get_sess_ids_by_file_id("5IFyKZXhD4uPN8Cd9QpK")
-    firebase_cli.download_sess_by_ids(sess_ids, "data/non-reading")
-    print("text")
-    sess_ids = firebase_cli.get_sess_ids_by_file_id("LJwXzrOlk9bzgWDFzpSV")
-    firebase_cli.download_sess_by_ids(sess_ids, "data/reading")
-    print("video")
-    sess_ids = firebase_cli.get_sess_ids_by_file_id("igBlC9lDwNPWd5yCMkyq")
-    firebase_cli.download_sess_by_ids(sess_ids, "data/non-reading")
-    print("video(cat)")
-    sess_ids = firebase_cli.get_sess_ids_by_file_id("heAGRyb6V82xmPjuiDFt")
-    firebase_cli.download_sess_by_ids(sess_ids, "data/non-reading")
+    firebase_cli.delete_all_sess()
+    # # download firebase sessions
+    # print("images")
+    # sess_ids = firebase_cli.get_sess_ids_by_file_id("5IFyKZXhD4uPN8Cd9QpK")
+    # firebase_cli.download_sess_by_ids(sess_ids, "data/non-reading")
+    # print("text")
+    # sess_ids = firebase_cli.get_sess_ids_by_file_id("LJwXzrOlk9bzgWDFzpSV")
+    # firebase_cli.download_sess_by_ids(sess_ids, "data/reading")
+    # print("video")
+    # sess_ids = firebase_cli.get_sess_ids_by_file_id("igBlC9lDwNPWd5yCMkyq")
+    # firebase_cli.download_sess_by_ids(sess_ids, "data/non-reading")
+    # print("video(cat)")
+    # sess_ids = firebase_cli.get_sess_ids_by_file_id("heAGRyb6V82xmPjuiDFt")
+    # firebase_cli.download_sess_by_ids(sess_ids, "data/non-reading")
 
